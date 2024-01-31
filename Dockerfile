@@ -13,7 +13,7 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} debian:bookworm-slim
 COPY --from=builder /palog /palog
 RUN apt-get update && \
     apt-get install -y icu-devtools && \
-    apt-get install mecab libmecab-dev mecab-ipadic-utf8 && \
+    apt-get install -y mecab libmecab-dev mecab-ipadic-utf8 && \
     rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/palog"]
