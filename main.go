@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -52,25 +53,31 @@ func init() {
 }
 
 func runJuman(s string) string {
-	var out strings.Builder
 	var reading strings.Builder
 
 	slog.Info("juman", "stdin", s)
 
 	cmd := exec.Command("juman")
-	cmd.Stdin = strings.NewReader(s)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = &out
+	stdin, err := cmd.StdinPipe()
 
-	err := cmd.Run()
-	if err != nil {
-		slog.Error("failed to run juman", "error", err)
-		return s
-	}
+        if err != nil {
+                fmt.Println(err)
+                os.Exit(1)
+        }
 
-	slog.Info("juman", "out", out.String())
+	io.WriteString(stdin, s)
+        stdin.Close()
+	
+        out, err := cmd.Output()
 
-	scanner := bufio.NewScanner(strings.NewReader(out.String()))
+        if err != nil {
+                fmt.Println(err)
+                os.Exit(1)
+        }
+
+	slog.Info("juman", "out", String(out)))
+
+	scanner := bufio.NewScanner(strings.NewReader(String(out)))
 	for scanner.Scan() {
 		line := scanner.Text()
 
