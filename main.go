@@ -68,11 +68,13 @@ func runJuman(s string) string {
 
 	for _, line := range lines {
 		
+		slog.Info("juman", "line", line)
+		
 		if len(line) == 0 {
 			continue
 		}
 		
-		fields := strings.Split(line, " ")
+		fields := regexp.MustCompile("\\s+").Split(line, -1)
 		
 		if len(fields) < 2 || fields[0] == "@" {
 			continue
