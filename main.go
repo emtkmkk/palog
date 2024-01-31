@@ -66,22 +66,22 @@ func runJuman(s string) string {
 		return s
 	}
 
-	scanner := bufio.NewScanner(&out)
+	scanner := bufio.NewScanner(strings.NewReader(out.String()))
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		slog.Info("juman", "line", line)
-		
+
 		if len(line) == 0 {
 			continue
 		}
-		
+
 		fields := regexp.MustCompile("\\s+").Split(line, -1)
-		
+
 		if len(fields) < 2 || fields[0] == "@" {
 			continue
 		}
-		
+
 		reading.WriteString(fields[1])
 	}
 
