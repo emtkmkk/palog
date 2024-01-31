@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"bufio"
 
-	"github.com/emtkmkk/palog/pkg/palrcon"
+	"github.com/miscord-dev/palog/pkg/palrcon"
 )
 
 var (
