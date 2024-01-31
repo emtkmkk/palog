@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"regexp"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
 )
