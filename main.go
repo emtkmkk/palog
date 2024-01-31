@@ -52,16 +52,15 @@ func init() {
 	}
 }
 
-func runJuman(s string) string {
+func runMecab(s string) string {
 	var reading strings.Builder
 
-	slog.Info("juman", "stdin", s)
 
-	cmd := exec.Command("juman")
+	cmd := exec.Command("mecab")
 	stdin, err := cmd.StdinPipe()
 
 	if err != nil {
-		slog.Error("failed to run juman", "error", err)
+		slog.Error("failed to run mecab", "error", err)
 		return s
 	}
 
@@ -71,29 +70,32 @@ func runJuman(s string) string {
         out, err := cmd.Output()
 
 	if err != nil {
-		slog.Error("failed to run juman", "error", err)
+		slog.Error("failed to run mecab", "error", err)
 		return s
 	}
 
-	slog.Info("juman", "out", string(out))
 
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		slog.Info("juman", "line", line)
-
 		if len(line) == 0 {
 			continue
 		}
 
-		fields := regexp.MustCompile("\\s+").Split(line, -1)
-
-		if len(fields) < 2 || fields[0] == "@" {
+		regexp.MustCompile("\\t+").Split(line, -1)
+		
+		if len(word) < 2 {
 			continue
 		}
 
-		reading.WriteString(fields[1])
+		fields := strings.Split(word[1], ",")
+
+		if len(fields) < 8 || fields[7] == "" || fields[7] == "*" {
+			reading.WriteString(word[0])
+		}
+
+		reading.WriteString(fields[7])
 	}
 
 	return reading.String()
@@ -117,7 +119,7 @@ func runUconvLatin(s string) string {
 
 func escapeString(s string) string {
 	if uconvLatin {
-		s = runJuman(s)
+		s = runMecab(s)
 		s = runUconvLatin(s)
 	}
 	s = strings.ReplaceAll(s, " ", "_")
