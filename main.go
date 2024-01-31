@@ -10,7 +10,6 @@ import (
 	"time"
 	"regexp"
 	"bufio"
-	"String"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
 )
@@ -76,9 +75,9 @@ func runJuman(s string) string {
 		return s
 	}
 
-	slog.Info("juman", "out", String(out))
+	slog.Info("juman", "out", string(out))
 
-	scanner := bufio.NewScanner(strings.NewReader(String(out)))
+	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	for scanner.Scan() {
 		line := scanner.Text()
 
