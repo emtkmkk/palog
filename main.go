@@ -204,12 +204,16 @@ func main() {
 				if _, ok := prev[player.PlayerUID]; !ok {
 					if player.Name != "" {
 						err := retriedBoarcast(fmt.Sprintf("player-joined:%s", player.Name))
+						if err != nil {
+							slog.Error("failed to broadcast", "error", err)
+							continue
+						}
 					} else {
 						err := retriedBoarcast(fmt.Sprintf("player-joined:%s", player.PlayerUID))
-					}
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
-						continue
+						if err != nil {
+							slog.Error("failed to broadcast", "error", err)
+							continue
+						}
 					}
 
 					slog.Info("Player joined", "player", player)
