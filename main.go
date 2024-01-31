@@ -149,6 +149,8 @@ func main() {
 			if err != nil {
 				slog.Error("failed to broadcast", "error", err)
 				continue
+			} else {
+				slog.Info("send broadcast", "broadcast", message)
 			}
 			return nil
 		}
