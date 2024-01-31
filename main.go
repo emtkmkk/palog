@@ -49,6 +49,41 @@ func init() {
 	}
 }
 
+func runJuman(s string) string {
+	var out strings.Builder
+	var reading strings.Builder
+
+	cmd := exec.Command("juman")
+	cmd.Stdin = strings.NewReader(s)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		slog.Error("failed to run juman", "error", err)
+		return s
+	}
+
+	lines := strings.Split(out.String(), "\n")
+
+	for _, line := range lines {
+		
+		if len(line) == 0 {
+			continue
+		}
+		
+		fields := strings.Split(line, " ")
+		
+		if len(fields) < 2 || fields[0] == "@" {
+			continue
+		}
+		
+		reading.WriteString(fields[1])
+	}
+
+	return reading.String()
+}
+
 func runUconvLatin(s string) string {
 	var out strings.Builder
 	cmd := exec.Command("uconv", "-x", "latin")
@@ -67,6 +102,7 @@ func runUconvLatin(s string) string {
 
 func escapeString(s string) string {
 	if uconvLatin {
+		s = runJuman(s)
 		s = runUconvLatin(s)
 	}
 	s = strings.ReplaceAll(s, " ", "_")
@@ -140,7 +176,7 @@ func main() {
 
 			for _, player := range playersMap {
 				if _, ok := prev[player.PlayerUID]; !ok {
-					err := retriedBoarcast(fmt.Sprintf("joined:%s", player.Name))
+					err := retriedBoarcast(fmt.Sprintf("player-joined:%s", player.Name))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 						continue
@@ -153,7 +189,7 @@ func main() {
 				if _, ok := playersMap[player.PlayerUID]; !ok {
 					slog.Info("Player left", "player", player)
 
-					err := retriedBoarcast(fmt.Sprintf("left:%s", player.Name))
+					err := retriedBoarcast(fmt.Sprintf("player-left:%s", player.Name))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 					}
