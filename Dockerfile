@@ -13,6 +13,7 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} debian:bookworm-slim
 COPY --from=builder /palog /palog
 RUN apt-get update && \
     apt-get install -y icu-devtools && \
+    apt-get install -y juman && \
     rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/palog"]
