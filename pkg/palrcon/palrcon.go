@@ -94,7 +94,7 @@ func (p *palRCON) GetPlayers() ([]Player, error) {
 		}
 
 		players = append(players, Player{
-			Name:      strings.Join(fields[:len(fields)-2], ","),
+			Name:      strings.Join(fields[:1], ","),
 			PlayerUID: fields[len(fields)-2],
 			SteamID:   fields[len(fields)-1],
 		})
