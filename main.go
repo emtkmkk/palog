@@ -83,7 +83,7 @@ func runMecab(s string) string {
 			continue
 		}
 
-		regexp.MustCompile("\\t+").Split(line, -1)
+		word := regexp.MustCompile("\\t+").Split(line, -1)
 		
 		if len(word) < 2 {
 			continue
