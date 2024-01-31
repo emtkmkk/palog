@@ -55,6 +55,8 @@ func runJuman(s string) string {
 	var out strings.Builder
 	var reading strings.Builder
 
+	slog.Info("juman", "stdin", s)
+
 	cmd := exec.Command("juman")
 	cmd.Stdin = strings.NewReader(s)
 	cmd.Stderr = os.Stderr
@@ -65,6 +67,8 @@ func runJuman(s string) string {
 		slog.Error("failed to run juman", "error", err)
 		return s
 	}
+
+	slog.Info("juman", "out", out.String())
 
 	scanner := bufio.NewScanner(strings.NewReader(out.String()))
 	for scanner.Scan() {
