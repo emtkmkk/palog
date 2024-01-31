@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"bufio"
 
-	"github.com/miscord-dev/palog/pkg/palrcon"
+	"github.com/emtkmkk/palog/pkg/palrcon"
 )
 
 var (
@@ -93,9 +93,10 @@ func runMecab(s string) string {
 
 		if len(fields) < 8 || fields[7] == "" || fields[7] == "*" {
 			reading.WriteString(word[0])
+		} else {
+			reading.WriteString(fields[7])
 		}
 
-		reading.WriteString(fields[7])
 	}
 
 	return reading.String()
