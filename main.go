@@ -60,22 +60,22 @@ func runJuman(s string) string {
 	cmd := exec.Command("juman")
 	stdin, err := cmd.StdinPipe()
 
-        if err != nil {
-                fmt.Println(err)
-                os.Exit(1)
-        }
+	if err != nil {
+		slog.Error("failed to run juman", "error", err)
+		return s
+	}
 
 	io.WriteString(stdin, s)
         stdin.Close()
 	
         out, err := cmd.Output()
 
-        if err != nil {
-                fmt.Println(err)
-                os.Exit(1)
-        }
+	if err != nil {
+		slog.Error("failed to run juman", "error", err)
+		return s
+	}
 
-	slog.Info("juman", "out", String(out)))
+	slog.Info("juman", "out", String(out))
 
 	scanner := bufio.NewScanner(strings.NewReader(String(out)))
 	for scanner.Scan() {
