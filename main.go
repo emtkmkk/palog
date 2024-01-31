@@ -10,6 +10,7 @@ import (
 	"time"
 	"regexp"
 	"bufio"
+	"String"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
 )
