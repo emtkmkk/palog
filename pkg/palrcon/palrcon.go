@@ -107,7 +107,7 @@ func (p *palRCON) GetPlayers() ([]Player, error) {
 		} else {
 			players = append(players, Player{
 				Name:      strings.Join(fields[:1], ","),
-				PlayerUID: fields[1] + fields[2],
+				PlayerUID: fields[2],
 				SteamID:   fields[1],
 			})
 		}
