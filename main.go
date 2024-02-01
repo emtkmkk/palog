@@ -219,7 +219,7 @@ func main() {
 
 			for _, player := range playersMap {
 				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok {
-					if player.Name != nil {
+					if player.Name != "" {
 						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
