@@ -298,7 +298,7 @@ func main() {
 
 			prev = playersMap
 			prevSub = playersSubMap
-			prevSub2 = playersSubMap2
+			prevSub2 = playersSub2Map
 
 			const layouth = "15"
 			const layoutm = "04"
