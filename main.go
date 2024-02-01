@@ -173,6 +173,19 @@ func main() {
 			}
 
 			m[player.Name + player.PlayerUID[:2]] = player
+		}
+
+		return m
+	}
+	
+	makeSubMap := func(players []palrcon.Player) map[string]palrcon.Player {
+		m := make(map[string]palrcon.Player)
+
+		for _, player := range players {
+			if player.PlayerUID == "00000000" {
+				continue
+			}
+
 			m[player.PlayerUID] = player
 		}
 
@@ -211,9 +224,11 @@ func main() {
 			slog.Debug("Current players", "players", players)
 
 			playersMap := makeMap(players)
+			playersSubMap := makeSubMap(players)
 
 			if prev == nil {
 				prev = playersMap
+				prevSub = playersSubMap
 				goto NEXT
 			}
 			
@@ -228,7 +243,7 @@ func main() {
     			const layout = "15:04"
 
 			for _, player := range playersMap {
-				_, ok2  := prev[player.PlayerUID];
+				_, ok2  := prevSub[player.PlayerUID];
 				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok && !ok2 {
 					if player.Name != "" {
 						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
@@ -248,7 +263,7 @@ func main() {
 				}
 			}
 			for _, player := range prev {
-				_, ok2 := prev[player.PlayerUID];
+				_, ok2 := playersSubMap[player.PlayerUID];
 				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok && !ok2 {
 					slog.Info("Player left", "player", player)
 
@@ -260,6 +275,7 @@ func main() {
 			}
 
 			prev = playersMap
+			prevSub = playersSubMap
 			
 			const layoutm = "04"
 			
