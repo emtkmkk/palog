@@ -164,6 +164,7 @@ func main() {
 
 	var prev map[string]palrcon.Player
 	var prevSub map[string]palrcon.Player
+	var prevSub2 map[string]palrcon.Player
 
 	makeMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
@@ -188,6 +189,20 @@ func main() {
 			}
 
 			m[player.PlayerUID] = player
+		}
+
+		return m
+	}
+	
+	makeSub2Map := func(players []palrcon.Player) map[string]palrcon.Player {
+		m := make(map[string]palrcon.Player)
+
+		for _, player := range players {
+			if player.SteamID == "00000000" {
+				continue
+			}
+
+			m[player.SteamID] = player
 		}
 
 		return m
@@ -226,10 +241,12 @@ func main() {
 
 			playersMap := makeMap(players)
 			playersSubMap := makeSubMap(players)
+			playersSub2Map := makeSub2Map(players)
 
 			if prev == nil {
 				prev = playersMap
 				prevSub = playersSubMap
+				prevSub2 = playersSub2Map
 				goto NEXT
 			}
 			
@@ -245,7 +262,9 @@ func main() {
 
 			for _, player := range playersMap {
 				_, ok2  := prevSub[player.PlayerUID];
-				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok && !ok2 {
+				_, ok3  := prevSub2[player.SteamID];
+				_, ok4  := prev[player.Name + player.SteamID[:2]];
+				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok && !ok2 && !ok3 && !ok4 {
 					if player.Name != "" {
 						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
 						if err != nil {
@@ -265,7 +284,9 @@ func main() {
 			}
 			for _, player := range prev {
 				_, ok2 := playersSubMap[player.PlayerUID];
-				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok && !ok2 {
+				_, ok3 := playersSub2Map[player.SteamID];
+				_, ok4  := playersMap[player.Name + player.SteamID[:2]];
+				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok && !ok2 && !ok3 && !ok4 {
 					slog.Info("Player left", "player", player)
 
 					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
@@ -277,6 +298,7 @@ func main() {
 
 			prev = playersMap
 			prevSub = playersSubMap
+			prevSub2 = playersSubMap2
 
 			const layouth = "15"
 			const layoutm = "04"
