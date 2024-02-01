@@ -297,7 +297,7 @@ func main() {
 			}
 
 			if len(playersMap) - len(prev) != diff {
-				diff2 = len(playersMap) - len(prev) - diff
+				diff2 := len(playersMap) - len(prev) - diff
 				if diff2 > 0 {
 					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(playersMap)))
 					if err != nil {
