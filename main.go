@@ -280,7 +280,7 @@ func main() {
 			
 			const layoutm = "04"
 			
-			if t.Format(layoutm) == "00" {
+			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
 					err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layout), len(playersMap)))
 					if err != nil {
