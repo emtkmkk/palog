@@ -163,6 +163,7 @@ func main() {
 	palRCON.SetTimeout(timeout)
 
 	var prev map[string]palrcon.Player
+	var prevSub map[string]palrcon.Player
 
 	makeMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
