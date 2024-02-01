@@ -54,6 +54,19 @@ func init() {
 }
 
 func runMecab(s string) string {
+	
+	kanaConv := unicode.SpecialCase{
+	    unicode.CaseRange{
+	        0x30a1, // Lo: ァ
+	        0x30f3, // Hi: ン
+	        [unicode.MaxCase]rune{
+	            0x3041 - 0x30a1,
+	            0x3041 - 0x30a1,
+	            0x3041 - 0x30a1,
+	        },
+	    },
+	}
+	
 	var reading strings.Builder
 
 	slog.Info("mecab", "in", s)
@@ -101,24 +114,12 @@ func runMecab(s string) string {
 			reading.WriteString(word[0])
 		} else {
 			slog.Info("mecab", "word", fields[7])
-			reading.WriteString(fields[7])
+			reading.WriteString(strings.ToUpperSpecial(kanaConv, fields[7]))
 		}
 
 	}
 
-	kanaConv := unicode.SpecialCase{
-	    unicode.CaseRange{
-	        0x30a1, // Lo: ァ
-	        0x30f3, // Hi: ン
-	        [unicode.MaxCase]rune{
-	            0x3041 - 0x30a1,
-	            0x3041 - 0x30a1,
-	            0x3041 - 0x30a1,
-	        },
-	    },
-	}
-
-	return strings.ToUpperSpecial(kanaConv, reading.String())
+	return reading.String()
 }
 
 func runUconvLatin(s string) string {
@@ -214,7 +215,15 @@ func main() {
 				prev = playersMap
 				goto NEXT
 			}
-   			t := time.Now()
+			
+			jst, err := time.LoadLocation("Asia/Tokyo")
+			
+			if err != nil {
+				fmt.Println("Error loading time zone:", err)
+				return
+			}
+			
+   			t := time.Now().In(jst)
     			const layout = "15:04"
 
 			for _, player := range playersMap {
