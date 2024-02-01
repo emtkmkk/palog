@@ -139,6 +139,8 @@ func runUconvLatin(s string) string {
 }
 
 func escapeString(s string) string {
+	
+	s = strings.ReplaceAll(s, "\x00", "")
 	if uconvLatin {
 		s = runMecab(s)
 		s = runUconvLatin(s)
