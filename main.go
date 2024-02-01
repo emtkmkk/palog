@@ -151,7 +151,7 @@ func escapeString(s string) string {
 		b := []byte(string(runes[i]))
 
 		if len(b) != 1 {
-			runes[i] = '*'
+			runes[i] = '?'
 		}
 	}
 
@@ -170,7 +170,10 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.PlayerUID == "00000000" {
+			name := strings.ReplaceAll(player.Name, "\x00", "")
+			name = strings.ReplaceAll(name, "\xe9", "")
+			name = strings.ReplaceAll(name, "\xb9", "")
+			if name == "" {
 				continue
 			}
 
@@ -184,7 +187,7 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.PlayerUID == "00000000" {
+			if player.PlayerUID == "00000000" || strings.Contains(player.PlayerUID, "\x00") {
 				continue
 			}
 
@@ -198,7 +201,7 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.SteamID == "00000000" {
+			if player.SteamID == "00000000" || strings.Contains(player.SteamID, "\x00") {
 				continue
 			}
 
