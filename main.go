@@ -277,15 +277,25 @@ func main() {
 
 			prev = playersMap
 			prevSub = playersSubMap
-			
+
+			const layouth = "15"
 			const layoutm = "04"
 			
 			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
-					err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layout), len(playersMap)))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
-						continue
+					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
+    						const layoutd = "01/02_15:04"
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layoutd), len(playersMap)))
+						if err != nil {
+							slog.Error("failed to broadcast", "error", err)
+							continue
+						}
+					} else {
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layout), len(playersMap)))
+						if err != nil {
+							slog.Error("failed to broadcast", "error", err)
+							continue
+						}
 					}
 					noticeFlg = true
 				}
