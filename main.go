@@ -174,7 +174,7 @@ func main() {
 				continue
 			}
 
-			m[player.Name + player.PlayerUID[:2]] = player
+			m[player.Name] = player
 		}
 
 		return m
@@ -258,38 +258,50 @@ func main() {
 			}
 			
    			t := time.Now().In(jst)
+
+			diff := 0
+			
     			const layout = "15:04"
 
 			for _, player := range playersMap {
 				_, ok2  := prevSub[player.PlayerUID];
 				_, ok3  := prevSub2[player.SteamID];
-				_, ok4  := prev[player.Name + player.SteamID[:2]];
-				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok && !ok2 && !ok3 && !ok4 {
-					if player.Name != "" {
-						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
-						if err != nil {
-							slog.Error("failed to broadcast", "error", err)
-							continue
-						}
-					} else {
-						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.PlayerUID, len(playersMap)))
-						if err != nil {
-							slog.Error("failed to broadcast", "error", err)
-							continue
-						}
-					}
-
+				if _, ok := prev[player.Name]; !ok && !ok2 && !ok3 {
 					slog.Info("Player joined", "player", player)
+
+					diff += 1
+					
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev) + diff))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+						continue
+					}
 				}
 			}
 			for _, player := range prev {
 				_, ok2 := playersSubMap[player.PlayerUID];
 				_, ok3 := playersSub2Map[player.SteamID];
-				_, ok4  := playersMap[player.Name + player.SteamID[:2]];
-				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok && !ok2 && !ok3 && !ok4 {
+				if _, ok := playersMap[player.Name]; !ok && !ok2 && !ok3 {
 					slog.Info("Player left", "player", player)
+					
+					diff -= 1
 
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev) + diff))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+					}
+				}
+			}
+
+			if len(playersMap) - len(prev) != diff {
+				diff2 = len(playersMap) - len(prev) - diff
+				if diff2 > 0 {
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(playersMap)))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+					}
+				} else if diff2 < 0 {
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:???(%d/32)", t.Format(layout), len(playersMap)))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 					}
