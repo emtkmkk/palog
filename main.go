@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"unicode"
 	"time"
 	"regexp"
 	"bufio"
@@ -105,7 +106,19 @@ func runMecab(s string) string {
 
 	}
 
-	return reading.String()
+	kanaConv := unicode.SpecialCase{
+	    unicode.CaseRange{
+	        0x30a1, // Lo: ァ
+	        0x30f3, // Hi: ン
+	        [unicode.MaxCase]rune{
+	            0x3041 - 0x30a1,
+	            0x3041 - 0x30a1,
+	            0x3041 - 0x30a1,
+	        },
+	    },
+	}
+
+	return strings.ToUpperSpecial(kanaConv, reading.String())
 }
 
 func runUconvLatin(s string) string {
@@ -158,7 +171,7 @@ func main() {
 				continue
 			}
 
-			m[player.PlayerUID] = player
+			m[player.Name + player.PlayerUID[:2]] = player
 		}
 
 		return m
@@ -182,6 +195,8 @@ func main() {
 		return fmt.Errorf("failed to broadcast: %w", err)
 	}
 
+	noticeFlg := false
+
 	for {
 		{
 			players, err := palRCON.GetPlayers()
@@ -199,17 +214,19 @@ func main() {
 				prev = playersMap
 				goto NEXT
 			}
+   			t := time.Now()
+    			const layout = "15:04"
 
 			for _, player := range playersMap {
-				if _, ok := prev[player.PlayerUID]; !ok {
-					if player.Name != "" {
-						err := retriedBoarcast(fmt.Sprintf("player-joined:%s", player.Name))
+				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok {
+					if player.Name != nil {
+						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
 						}
 					} else {
-						err := retriedBoarcast(fmt.Sprintf("player-joined:%s", player.PlayerUID))
+						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.PlayerUID, len(playersMap)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
@@ -220,10 +237,10 @@ func main() {
 				}
 			}
 			for _, player := range prev {
-				if _, ok := playersMap[player.PlayerUID]; !ok {
+				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok {
 					slog.Info("Player left", "player", player)
 
-					err := retriedBoarcast(fmt.Sprintf("player-left:%s", player.Name))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 					}
@@ -231,6 +248,21 @@ func main() {
 			}
 
 			prev = playersMap
+			
+			const layoutm = "04"
+			
+			if t.Format(layoutm) == "00" {
+				if !noticeFlg {
+					err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layout), len(playersMap)))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+						continue
+					}
+					noticeFlg = true
+				}
+			} else {
+				noticeFlg = false
+			}
 		}
 	NEXT:
 		time.Sleep(interval)
