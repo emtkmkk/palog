@@ -173,6 +173,7 @@ func main() {
 			}
 
 			m[player.Name + player.PlayerUID[:2]] = player
+			m[player.PlayerUID] = player
 		}
 
 		return m
@@ -227,7 +228,8 @@ func main() {
     			const layout = "15:04"
 
 			for _, player := range playersMap {
-				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok {
+				_, ok2  := prev[player.PlayerUID];
+				if _, ok := prev[player.Name + player.PlayerUID[:2]]; !ok && !ok2 {
 					if player.Name != "" {
 						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
 						if err != nil {
@@ -246,7 +248,8 @@ func main() {
 				}
 			}
 			for _, player := range prev {
-				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok {
+				_, ok2 := prev[player.PlayerUID];
+				if _, ok := playersMap[player.Name + player.PlayerUID[:2]]; !ok && !ok2 {
 					slog.Info("Player left", "player", player)
 
 					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
