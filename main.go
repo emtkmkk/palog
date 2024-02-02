@@ -358,21 +358,6 @@ func main() {
 				}
 			}
 
-			if len(playersMap)-len(prev3) != diff {
-				diff2 := len(playersMap) - len(prev3) - diff
-				if diff2 > 0 {
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(playersMap)))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
-					}
-				} else if diff2 < 0 {
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:???(%d/32)", t.Format(layout), len(playersMap)))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
-					}
-				}
-			}
-
 			prev3 = prev2
 			prev2 = prev
 			prev = playersMap
