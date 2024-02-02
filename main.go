@@ -151,7 +151,7 @@ func runFree() MemInfo {
 		}
 	}
 
-	line := strings.Split(out.String(), "\n")[2] // skip header
+	line := strings.Split(out.String(), "\n")[1] // skip header
 
 	if len(line) == 0 {
 		slog.Error("failed to run free", "len(line)", len(line))
