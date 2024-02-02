@@ -70,7 +70,6 @@ func runMecab(s string) string {
 	
 	var reading strings.Builder
 
-	slog.Info("mecab", "in", s)
 	cmd := exec.Command("mecab")
 	stdin, err := cmd.StdinPipe()
 
@@ -89,12 +88,10 @@ func runMecab(s string) string {
 		return s
 	}
 
-	slog.Info("mecab", "out", err)
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	for scanner.Scan() {
 		line := scanner.Text()
 		
-		slog.Info("mecab", "line", line)
 
 		if len(line) == 0 {
 			continue
@@ -105,16 +102,12 @@ func runMecab(s string) string {
 		if len(word) < 2 {
 			continue
 		}
-		
-		slog.Info("mecab", "word1", word[1])
 
 		fields := strings.Split(word[1], ",")
 
 		if len(fields) < 8 || fields[7] == "" || fields[7] == "*" {
-			slog.Info("mecab", "word", word[0])
 			reading.WriteString(word[0])
 		} else {
-			slog.Info("mecab", "word", fields[7])
 			reading.WriteString(strings.ToUpperSpecial(kanaConv, fields[7]))
 		}
 
@@ -324,14 +317,18 @@ func main() {
 			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
 					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
+						slog.Info("mem", "free", memory.FreeMemory())
+						slog.Info("mem", "total", memory.TotalMemory())
     						const layoutd = "01/02_15:04"
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float32(memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float32(memory.TotalMemory() - memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
 						}
 					} else {
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float32(memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
+						slog.Info("mem", "free", memory.FreeMemory())
+						slog.Info("mem", "total", memory.TotalMemory())
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float32(memory.TotalMemory() - memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
