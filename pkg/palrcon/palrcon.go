@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/gorcon/rcon"
 )
@@ -121,11 +122,12 @@ func (p *palRCON) GetPlayers() ([]Player, error) {
 func extractPrintableChars(input []byte) string {
 	var result []rune
 
-	for _, b := range input {
-		// バイトを文字として解釈でき、印刷可能なもののみ結合
-		if unicode.IsPrint(rune(b)) {
-			result = append(result, rune(b))
+	for len(input) > 0 {
+		r, size := utf8.DecodeRune(input)
+		if unicode.IsPrint(r) {
+			result = append(result, r)
 		}
+		input = input[size:]
 	}
 
 	return string(result)
