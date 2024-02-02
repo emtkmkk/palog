@@ -88,27 +88,28 @@ func (p *palRCON) GetPlayers() ([]Player, error) {
 		}
 
 		fields := strings.Split(line, ",")
+		name := []byte(strings.Join(fields[:1], ","))
 		if len(fields) == 0 {
-			continue;
+			continue
 		}
-		
+
 		if len(fields) == 1 {
 			players = append(players, Player{
-				Name:      strings.Join(fields[:1], ","),
-				PlayerUID: fields[0],
-				SteamID:   fields[0],
+				Name:      string(name),
+				PlayerUID: string(name),
+				SteamID:   string(name),
 			})
 		} else if len(fields) == 2 {
 			players = append(players, Player{
-				Name:      strings.Join(fields[:1], ","),
-				PlayerUID: fields[1],
-				SteamID:   fields[1],
+				Name:      string(name),
+				PlayerUID: string([]byte(fields[1])),
+				SteamID:   string([]byte(fields[1])),
 			})
 		} else {
 			players = append(players, Player{
-				Name:      strings.Join(fields[:1], ","),
-				PlayerUID: fields[2],
-				SteamID:   fields[1],
+				Name:      string(name),
+				PlayerUID: string([]byte(fields[2])),
+				SteamID:   string([]byte(fields[1])),
 			})
 		}
 	}
