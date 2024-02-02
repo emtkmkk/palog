@@ -220,6 +220,8 @@ func main() {
 	palRCON.SetTimeout(timeout)
 
 	var prev map[string]palrcon.Player
+	var prev2 map[string]palrcon.Player
+	var prev3 map[string]palrcon.Player
 	var prevSub map[string]palrcon.Player
 	var prevSub2 map[string]palrcon.Player
 
@@ -302,6 +304,8 @@ func main() {
 
 			if prev == nil {
 				prev = playersMap
+				prev2 = playersMap
+				prev3 = playersMap
 				prevSub = playersSubMap
 				prevSub2 = playersSub2Map
 				goto NEXT
@@ -323,7 +327,9 @@ func main() {
 			for _, player := range playersMap {
 				_, ok2 := prevSub[player.PlayerUID]
 				_, ok3 := prevSub2[player.SteamID]
-				if _, ok := prev[player.Name]; !ok && !ok2 && !ok3 {
+				_, ok4 := prev2[player.Name]
+				_, ok5 := prev3[player.Name]
+				if _, ok := prev[player.Name]; ok && !ok2 && !ok3 && ok4 && !ok5 {
 					slog.Info("Player joined", "player", player)
 
 					diff += 1
@@ -335,10 +341,12 @@ func main() {
 					}
 				}
 			}
-			for _, player := range prev {
+			for _, player := range prev3 {
 				_, ok2 := playersSubMap[player.PlayerUID]
 				_, ok3 := playersSub2Map[player.SteamID]
-				if _, ok := playersMap[player.Name]; !ok && !ok2 && !ok3 {
+				_, ok4 := prev2[player.Name]
+				_, ok5 := prev[player.Name]
+				if _, ok := playersMap[player.Name]; !ok && !ok2 && !ok3 && !ok4 && !ok5 {
 					slog.Info("Player left", "player", player)
 
 					diff -= 1
@@ -350,8 +358,8 @@ func main() {
 				}
 			}
 
-			if len(playersMap)-len(prev) != diff {
-				diff2 := len(playersMap) - len(prev) - diff
+			if len(playersMap)-len(prev3) != diff {
+				diff2 := len(playersMap) - len(prev3) - diff
 				if diff2 > 0 {
 					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(playersMap)))
 					if err != nil {
@@ -365,6 +373,8 @@ func main() {
 				}
 			}
 
+			prev3 = prev2
+			prev2 = prev
 			prev = playersMap
 			prevSub = playersSubMap
 			prevSub2 = playersSub2Map
