@@ -1,3 +1,5 @@
+github.com/dustin-decker/memory v0.0.0-20220311051549-ea268d315863 h1:3OM+61elxmi2FpcBXIhuZ+A3TPi2K7ohiW3byBpdn3Y=
+github.com/dustin-decker/memory v0.0.0-20220311051549-ea268d315863/go.mod h1:DXv8WO4yhMYhSNPKjeNKa5WY9YCIEBRbNzFFPJbWO6Y=
 github.com/gorcon/rcon v1.3.4 h1:TExNhWI2mJlqpCg49vajUgznvEZbEzQWKujY1Sy+/AY=
 github.com/gorcon/rcon v1.3.4/go.mod h1:46+oSXgPwlRAkcAPStkNnIL1dlcxJweKVNWshy3hDJI=
 github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 h1:onHthvaw9LFnH4t2DcNVpwGmV9E1BkGknEliJkfwQj0=

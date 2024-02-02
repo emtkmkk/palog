@@ -1,16 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"log/slog"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
-	"strings"
-	"unicode"
-	"time"
 	"regexp"
-	"bufio"
+	"strings"
+	"time"
+	"unicode"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
 	"github.com/pbnjay/memory"
@@ -55,19 +55,19 @@ func init() {
 }
 
 func runMecab(s string) string {
-	
+
 	kanaConv := unicode.SpecialCase{
-	    unicode.CaseRange{
-	        0x30a1, // Lo: ァ
-	        0x30f3, // Hi: ン
-	        [unicode.MaxCase]rune{
-	            0x3041 - 0x30a1,
-	            0x3041 - 0x30a1,
-	            0x3041 - 0x30a1,
-	        },
-	    },
+		unicode.CaseRange{
+			Lo: 0x30a1, // Lo: ァ
+			Hi: 0x30f3, // Hi: ン
+			Delta: [unicode.MaxCase]rune{
+				0x3041 - 0x30a1,
+				0x3041 - 0x30a1,
+				0x3041 - 0x30a1,
+			},
+		},
 	}
-	
+
 	var reading strings.Builder
 
 	cmd := exec.Command("mecab")
@@ -79,9 +79,9 @@ func runMecab(s string) string {
 	}
 
 	io.WriteString(stdin, s)
-        stdin.Close()
-	
-        out, err := cmd.Output()
+	stdin.Close()
+
+	out, err := cmd.Output()
 
 	if err != nil {
 		slog.Error("failed to run mecab", "error", err)
@@ -91,14 +91,13 @@ func runMecab(s string) string {
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	for scanner.Scan() {
 		line := scanner.Text()
-		
 
 		if len(line) == 0 {
 			continue
 		}
 
 		word := regexp.MustCompile("\\t+").Split(line, -1)
-		
+
 		if len(word) < 2 {
 			continue
 		}
@@ -133,7 +132,7 @@ func runUconvLatin(s string) string {
 }
 
 func escapeString(s string) string {
-	
+
 	s = strings.ReplaceAll(s, "\x00", "")
 	if uconvLatin {
 		s = runMecab(s)
@@ -178,7 +177,7 @@ func main() {
 
 		return m
 	}
-	
+
 	makeSubMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
 
@@ -192,7 +191,7 @@ func main() {
 
 		return m
 	}
-	
+
 	makeSub2Map := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
 
@@ -248,29 +247,29 @@ func main() {
 				prevSub2 = playersSub2Map
 				goto NEXT
 			}
-			
+
 			jst, err := time.LoadLocation("Asia/Tokyo")
-			
+
 			if err != nil {
 				fmt.Println("Error loading time zone:", err)
 				return
 			}
-			
-   			t := time.Now().In(jst)
+
+			t := time.Now().In(jst)
 
 			diff := 0
-			
-    			const layout = "15:04"
+
+			const layout = "15:04"
 
 			for _, player := range playersMap {
-				_, ok2  := prevSub[player.PlayerUID];
-				_, ok3  := prevSub2[player.SteamID];
+				_, ok2 := prevSub[player.PlayerUID]
+				_, ok3 := prevSub2[player.SteamID]
 				if _, ok := prev[player.Name]; !ok && !ok2 && !ok3 {
 					slog.Info("Player joined", "player", player)
 
 					diff += 1
-					
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev) + diff))
+
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev)+diff))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 						continue
@@ -278,21 +277,21 @@ func main() {
 				}
 			}
 			for _, player := range prev {
-				_, ok2 := playersSubMap[player.PlayerUID];
-				_, ok3 := playersSub2Map[player.SteamID];
+				_, ok2 := playersSubMap[player.PlayerUID]
+				_, ok3 := playersSub2Map[player.SteamID]
 				if _, ok := playersMap[player.Name]; !ok && !ok2 && !ok3 {
 					slog.Info("Player left", "player", player)
-					
+
 					diff -= 1
 
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev) + diff))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev)+diff))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 					}
 				}
 			}
 
-			if len(playersMap) - len(prev) != diff {
+			if len(playersMap)-len(prev) != diff {
 				diff2 := len(playersMap) - len(prev) - diff
 				if diff2 > 0 {
 					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(playersMap)))
@@ -313,22 +312,22 @@ func main() {
 
 			const layouth = "15"
 			const layoutm = "04"
-			
+
 			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
 					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
-						slog.Info("mem", "free", memory.FreeMemory())
+						slog.Info("mem", "free", memory.AvailableMemory())
 						slog.Info("mem", "total", memory.TotalMemory())
-    						const layoutd = "01/02_15:04"
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float32(memory.TotalMemory() - memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
+						const layoutd = "01/02_15:04"
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float32(memory.TotalMemory()-memory.AvailableMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
 						}
 					} else {
-						slog.Info("mem", "free", memory.FreeMemory())
+						slog.Info("mem", "free", memory.AvailableMemory())
 						slog.Info("mem", "total", memory.TotalMemory())
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float32(memory.TotalMemory() - memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float32(memory.TotalMemory()-memory.AvailableMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
