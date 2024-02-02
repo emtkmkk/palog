@@ -13,6 +13,7 @@ import (
 	"bufio"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
+	"github.com/pbnjay/memory"
 )
 
 var (
@@ -324,13 +325,13 @@ func main() {
 				if !noticeFlg {
 					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
     						const layoutd = "01/02_15:04"
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layoutd), len(playersMap)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float32(memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
 						}
 					} else {
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)", t.Format(layout), len(playersMap)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float32(memory.FreeMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
