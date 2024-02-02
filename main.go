@@ -8,13 +8,18 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
-	"github.com/pbnjay/memory"
 )
+
+type MemInfo struct {
+	TotalMemory int
+	UsedMemory  int
+}
 
 var (
 	rconEndpoint = os.Getenv("RCON_ENDPOINT")
@@ -96,7 +101,7 @@ func runMecab(s string) string {
 			continue
 		}
 
-		word := regexp.MustCompile("\\t+").Split(line, -1)
+		word := regexp.MustCompile(`\t+`).Split(line, -1)
 
 		if len(word) < 2 {
 			continue
@@ -131,9 +136,66 @@ func runUconvLatin(s string) string {
 	return out.String()
 }
 
+func runFree() MemInfo {
+	var out strings.Builder
+	cmd := exec.Command("free", "-b")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		slog.Error("failed to run free", "error", err)
+		return MemInfo{
+			TotalMemory: 0,
+			UsedMemory: 0,
+		}
+	}
+
+	line := strings.Split(out.String(), "\n")[2] // skip header
+
+	if len(line) == 0 {
+		slog.Error("failed to run free", "len(line)", len(line))
+		return MemInfo{
+			TotalMemory: 0,
+			UsedMemory: 0,
+		}
+	}
+
+	fields := regexp.MustCompile(`\s+`).Split(line, -1)
+	if len(fields) < 3 {
+		slog.Error("failed to run free", "len(fields)", len(fields))
+		return MemInfo{
+			TotalMemory: 0,
+			UsedMemory: 0,
+		}
+	}
+
+	intTotal, err := strconv.Atoi(fields[1]);
+	if err != nil {
+		slog.Error("failed to run free", "error", err)
+		return MemInfo{
+			TotalMemory: 0,
+			UsedMemory: 0,
+		}
+	}
+	intUsed, err := strconv.Atoi(fields[2]);
+	if err != nil {
+		slog.Error("failed to run free", "error", err)
+		return MemInfo{
+			TotalMemory: intTotal,
+			UsedMemory: 0,
+		}
+	}
+
+	return MemInfo{
+		TotalMemory: intTotal,
+		UsedMemory: intUsed,
+	}
+}
+
 func escapeString(s string) string {
 
-	s = strings.ReplaceAll(s, "\x00", "")
+	s = strings.ReplaceAll(s, `\x00`, "")
 	if uconvLatin {
 		s = runMecab(s)
 		s = runUconvLatin(s)
@@ -165,9 +227,9 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			name := strings.ReplaceAll(player.Name, "\x00", "")
-			name = strings.ReplaceAll(name, "\xe9", "")
-			name = strings.ReplaceAll(name, "\xb9", "")
+			name := strings.ReplaceAll(player.Name, `\x00`, "")
+			name = strings.ReplaceAll(name, `\xe9`, "")
+			name = strings.ReplaceAll(name, `\xb9`, "")
 			if name == "" {
 				continue
 			}
@@ -182,7 +244,7 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.PlayerUID == "00000000" || strings.Contains(player.PlayerUID, "\x00") {
+			if player.PlayerUID == "00000000" || strings.Contains(player.PlayerUID, `\x00`) {
 				continue
 			}
 
@@ -196,7 +258,7 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.SteamID == "00000000" || strings.Contains(player.SteamID, "\x00") {
+			if player.SteamID == "00000000" || strings.Contains(player.SteamID, `\x00`) {
 				continue
 			}
 
@@ -315,19 +377,20 @@ func main() {
 
 			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
+					memInfo := runFree();
 					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
-						slog.Info("mem", "free", memory.AvailableMemory())
-						slog.Info("mem", "total", memory.TotalMemory())
+						slog.Info("mem", "used", memInfo.UsedMemory)
+						slog.Info("mem", "total", memInfo.TotalMemory)
 						const layoutd = "01/02_15:04"
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float32(memory.TotalMemory()-memory.AvailableMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
 						}
 					} else {
-						slog.Info("mem", "free", memory.AvailableMemory())
-						slog.Info("mem", "total", memory.TotalMemory())
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float32(memory.TotalMemory()-memory.AvailableMemory())*float32(1000)/float32(memory.TotalMemory())/float32(10)))
+						slog.Info("mem", "used", memInfo.UsedMemory)
+						slog.Info("mem", "total", memInfo.TotalMemory)
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue

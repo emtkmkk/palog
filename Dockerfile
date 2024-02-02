@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s
 FROM --platform=${TARGETPLATFORM:-linux/amd64} debian:bookworm-slim
 COPY --from=builder /palog /palog
 RUN apt-get update && \
+    apt-get install -y procps && \
     apt-get install -y icu-devtools && \
     apt-get install -y mecab libmecab-dev mecab-ipadic-utf8 && \
     rm -rf /var/lib/apt/lists/*
