@@ -95,26 +95,39 @@ func (p *palRCON) GetPlayers() ([]Player, error) {
 
 		if len(fields) == 1 {
 			players = append(players, Player{
-				Name:      string(name),
-				PlayerUID: string(name),
-				SteamID:   string(name),
+				Name:      extractPrintableChars(name),
+				PlayerUID: extractPrintableChars(name),
+				SteamID:   extractPrintableChars(name),
 			})
 		} else if len(fields) == 2 {
 			players = append(players, Player{
-				Name:      string(name),
-				PlayerUID: string([]byte(fields[1])),
-				SteamID:   string([]byte(fields[1])),
+				Name:      extractPrintableChars(name),
+				PlayerUID: extractPrintableChars([]byte(fields[1])),
+				SteamID:   extractPrintableChars([]byte(fields[1])),
 			})
 		} else {
 			players = append(players, Player{
-				Name:      string(name),
-				PlayerUID: string([]byte(fields[2])),
-				SteamID:   string([]byte(fields[1])),
+				Name:      extractPrintableChars(name),
+				PlayerUID: extractPrintableChars([]byte(fields[2])),
+				SteamID:   extractPrintableChars([]byte(fields[1])),
 			})
 		}
 	}
 
 	return players, nil
+}
+
+func extractPrintableChars(input []byte) string {
+	var result []rune
+
+	for _, b := range input {
+		// バイトを文字として解釈でき、印刷可能なもののみ結合
+		if unicode.IsPrint(rune(b)) {
+			result = append(result, rune(b))
+		}
+	}
+
+	return string(result)
 }
 
 func (p *palRCON) Broadcast(message string) error {
