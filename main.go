@@ -338,6 +338,21 @@ func main() {
 						// 同一人物として扱う
 						playerName = existingPlayer.Name
 					}
+					
+					// 同じようなタイミングで退出しているプレイヤーがいる場合、ニックネームバグの可能性が高い
+					if playerAppearances[playerName] == 2 {
+						for pn, count := range playerDisappearances {
+							if count == 2 {
+								//通知せずに入れ替え
+								slog.Info("nameChange:" + pn, "newName", player.Name)
+								delete(playerAppearances, playerName)
+								delete(playerDisappearances, pn)
+								delete(onlinePlayers, pn)
+								onlinePlayers[player.Name] = player
+								continue
+							}
+						}
+					}
 
 					if _, ok := onlinePlayers[playerName]; ok {
 						continue
