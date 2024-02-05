@@ -224,6 +224,7 @@ func main() {
 	var prev3 map[string]palrcon.Player
 	var prevSub map[string]palrcon.Player
 	var prevSub2 map[string]palrcon.Player
+	var onlinePlayers map[string]palrcon.Player
 
 	makeMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
@@ -303,12 +304,18 @@ func main() {
 			playersSub2Map := makeSub2Map(players)
 
 			if prev == nil {
+				onlinePlayers = make(map[string]palrcon.Player)
 				prev = playersMap
 				prev2 = playersMap
 				prev3 = playersMap
 				prevSub = playersSubMap
 				prevSub2 = playersSub2Map
 				goto NEXT
+			}
+
+			if len(playersMap)+len(prev2)+len(prev3) == 0 {
+				onlinePlayers = nil
+				onlinePlayers = make(map[string]palrcon.Player)
 			}
 
 			jst, err := time.LoadLocation("Asia/Tokyo")
@@ -334,11 +341,12 @@ func main() {
 
 					diff += 1
 
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev2)+diff))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 						continue
 					}
+					onlinePlayers[player.Name] = player;
 				}
 			}
 			for _, player := range prev3 {
@@ -351,7 +359,23 @@ func main() {
 
 					diff -= 1
 
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(playersMap)))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev2)+diff))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+					}
+					delete(onlinePlayers,player.Name)
+				}
+			}
+
+			if len(prev2)-len(prev3) != diff {
+				diff2 := len(prev2) - len(prev3) - diff
+				if diff2 > 0 {
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(prev2)))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+					}
+				} else if diff2 < 0 {
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:???(%d/32)", t.Format(layout), len(prev2)))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 					}
@@ -370,11 +394,16 @@ func main() {
 			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
 					memInfo := runFree();
+					var playerNames []string 
+					for onlinePlayer := range onlinePlayers {
+						playerNames =  append(playerNames, onlinePlayer)
+					}
+					playerNamesText := "Online:" + strings.Join(playerNames, ",")
 					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
 						slog.Info("mem", "used", memInfo.UsedMemory)
 						slog.Info("mem", "total", memInfo.TotalMemory)
 						const layoutd = "01/02_15:04"
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
@@ -382,11 +411,16 @@ func main() {
 					} else {
 						slog.Info("mem", "used", memInfo.UsedMemory)
 						slog.Info("mem", "total", memInfo.TotalMemory)
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)_<Mem:%.1f%%>", t.Format(layout), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)<Mem:%.1f%%>", t.Format(layout), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
 						}
+					}
+					err := retriedBoarcast(string(playerNamesText))
+					if err != nil {
+						slog.Error("failed to broadcast", "error", err)
+						continue
 					}
 					noticeFlg = true
 				}
