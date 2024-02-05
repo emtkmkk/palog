@@ -321,8 +321,6 @@ func main() {
 
 			t := time.Now().In(jst)
 
-			diff := 0
-
 			const layout = "15:04"
 
 			for playerName, player := range playersMap {
@@ -341,7 +339,7 @@ func main() {
 						playerName = existingPlayer.Name
 					}
 
-					if onlinePlayers[playerName] {
+					if _, ok := onlinePlayers[playerName]; ok {
 						continue
 					}
 					
@@ -377,7 +375,7 @@ func main() {
 						playerName = existingPlayer.Name
 					}
 					
-					if playersMap[playerName] {
+					if _, ok := playersMap[playerName]; ok {
 						continue
 					}
 					
