@@ -304,7 +304,7 @@ func main() {
 			playersSub2Map := makeSub2Map(players)
 
 			if prev == nil {
-				onlinePlayers = make(map[string]palrcon.Player)
+				onlinePlayers = playersMap
 				prev = playersMap
 				prev2 = playersMap
 				prev3 = playersMap
@@ -341,7 +341,7 @@ func main() {
 
 					diff += 1
 
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev2)+diff))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev3)+diff))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 						continue
@@ -359,7 +359,7 @@ func main() {
 
 					diff -= 1
 
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev2)+diff))
+					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev3)+diff))
 					if err != nil {
 						slog.Error("failed to broadcast", "error", err)
 					}
