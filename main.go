@@ -215,16 +215,18 @@ func escapeString(s string) string {
 	return string(runes)
 }
 
+const notificationThreshold = 3
+
 func main() {
 	palRCON := palrcon.NewPalRCON(rconEndpoint, rconPassword)
 	palRCON.SetTimeout(timeout)
 
 	var prev map[string]palrcon.Player
-	var prev2 map[string]palrcon.Player
-	var prev3 map[string]palrcon.Player
 	var prevSub map[string]palrcon.Player
 	var prevSub2 map[string]palrcon.Player
 	var onlinePlayers map[string]palrcon.Player
+	var playerAppearances = make(map[string]int)
+	var playerDisappearances = make(map[string]int)
 
 	makeMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
@@ -239,7 +241,6 @@ func main() {
 
 		return m
 	}
-
 	makeSubMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
 
@@ -306,16 +307,9 @@ func main() {
 			if prev == nil {
 				onlinePlayers = playersMap
 				prev = playersMap
-				prev2 = playersMap
-				prev3 = playersMap
 				prevSub = playersSubMap
 				prevSub2 = playersSub2Map
 				goto NEXT
-			}
-
-			if len(playersMap)+len(prev2)+len(prev3) == 0 {
-				onlinePlayers = nil
-				onlinePlayers = make(map[string]palrcon.Player)
 			}
 
 			jst, err := time.LoadLocation("Asia/Tokyo")
@@ -331,59 +325,79 @@ func main() {
 
 			const layout = "15:04"
 
-			for _, player := range playersMap {
-				_, ok2 := prevSub[player.PlayerUID]
-				_, ok3 := prevSub2[player.SteamID]
-				_, ok4 := prev2[player.Name]
-				_, ok5 := prev3[player.Name]
-				if _, ok := prev[player.Name]; ok && !ok2 && !ok3 && ok4 && !ok5 {
-					slog.Info("Player joined", "player", player)
+			for playerName, player := range playersMap {
+				if _, ok := onlinePlayers[playerName]; !ok {
+					// 新しく参加したプレイヤー
+			
+					// 既に同じPlayerUIDが存在するか確認
+					if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
+						// 同一人物として扱う
+						playerName = exists.Name
+					}
+			
+					// 既に同じSteamIDが存在するか確認
+					if existingPlayer, exists := prevSub2[player.SteamID]; exists {
+						// 同一人物として扱う
+						playerName = exists.Name
+					}
 
-					diff += 1
-
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(prev3)+diff))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
+					if onlinePlayers[playerName] {
 						continue
 					}
-					onlinePlayers[player.Name] = player;
-				}
-			}
-			for _, player := range prev3 {
-				_, ok2 := playersSubMap[player.PlayerUID]
-				_, ok3 := playersSub2Map[player.SteamID]
-				_, ok4 := prev2[player.Name]
-				_, ok5 := prev[player.Name]
-				if _, ok := playersMap[player.Name]; !ok && !ok2 && !ok3 && !ok4 && !ok5 {
-					slog.Info("Player left", "player", player)
-
-					diff -= 1
-
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), player.Name, len(prev3)+diff))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
-					}
-					delete(onlinePlayers,player.Name)
-				}
-			}
-
-			if len(prev2)-len(prev3) != diff {
-				diff2 := len(prev2) - len(prev3) - diff
-				if diff2 > 0 {
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:???(%d/32)", t.Format(layout), len(prev2)))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
-					}
-				} else if diff2 < 0 {
-					err := retriedBoarcast(fmt.Sprintf("[%s]player-left:???(%d/32)", t.Format(layout), len(prev2)))
-					if err != nil {
-						slog.Error("failed to broadcast", "error", err)
+					
+					delete(playerDisappearances, playerName)
+					
+					playerAppearances[playerName]++
+					slog.Info("playerAppearances:" + playerName, "count", playerAppearances[playerName])
+					if playerAppearances[playerName] >= notificationThreshold {
+						delete(playerAppearances, playerName)
+						slog.Info("Player joined", "player", player)
+						onlinePlayers[player.Name] = player
+						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(onlinePlayers)))
+						if err != nil {
+							slog.Error("failed to broadcast", "error", err)
+						}
 					}
 				}
 			}
+			
+			for playerName, player := range onlinePlayers {
+				if _, ok := playersMap[player.Name]; !ok {
+					// 退出したプレイヤー
+			
+					// 既に同じPlayerUIDが存在するか確認
+					if existingPlayer, exists := playersSubMap[player.PlayerUID]; exists {
+						// 同一人物として扱う
+						playerName = exists.Name
+					}
+			
+					// 既に同じSteamIDが存在するか確認
+					if existingPlayer, exists := playersSub2Map[player.SteamID]; exists {
+						// 同一人物として扱う
+						playerName = exists.Name
+					}
+					
+					if playersMap[playerName] {
+						continue
+					}
+					
+					delete(playerAppearances, playerName)
+					
+					playerDisappearances[playerName]++
+					slog.Info("playerDisappearances:" + playerName, "count", playerDisappearances[playerName])
+					
+					if playerDisappearances[playerName] >= notificationThreshold {
+						delete(playerDisappearances, playerName)
+						delete(onlinePlayers, playerName)
+						slog.Info("Player left", "player", player)
+						err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), playerName, len(onlinePlayers)))
+						if err != nil {
+							slog.Error("failed to broadcast", "error", err)
+						}
+					}
+				}
+			}
 
-			prev3 = prev2
-			prev2 = prev
 			prev = playersMap
 			prevSub = playersSubMap
 			prevSub2 = playersSub2Map
@@ -403,7 +417,7 @@ func main() {
 						slog.Info("mem", "used", memInfo.UsedMemory)
 						slog.Info("mem", "total", memInfo.TotalMemory)
 						const layoutd = "01/02_15:04"
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)<Mem:%.1f%%>", t.Format(layoutd), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)<Mem:%.1f%%>", t.Format(layoutd), len(onlinePlayers), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
@@ -411,7 +425,7 @@ func main() {
 					} else {
 						slog.Info("mem", "used", memInfo.UsedMemory)
 						slog.Info("mem", "total", memInfo.TotalMemory)
-						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)<Mem:%.1f%%>", t.Format(layout), len(playersMap), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
+						err := retriedBoarcast(fmt.Sprintf("---%s---(%d/32)<Mem:%.1f%%>", t.Format(layout), len(onlinePlayers), float64(memInfo.UsedMemory)*float64(1000)/float64(memInfo.TotalMemory)/float64(10)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 							continue
