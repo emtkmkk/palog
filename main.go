@@ -332,13 +332,13 @@ func main() {
 					// 既に同じPlayerUIDが存在するか確認
 					if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
 						// 同一人物として扱う
-						playerName = exists.Name
+						playerName = existingPlayer.Name
 					}
 			
 					// 既に同じSteamIDが存在するか確認
 					if existingPlayer, exists := prevSub2[player.SteamID]; exists {
 						// 同一人物として扱う
-						playerName = exists.Name
+						playerName = existingPlayer.Name
 					}
 
 					if onlinePlayers[playerName] {
@@ -368,13 +368,13 @@ func main() {
 					// 既に同じPlayerUIDが存在するか確認
 					if existingPlayer, exists := playersSubMap[player.PlayerUID]; exists {
 						// 同一人物として扱う
-						playerName = exists.Name
+						playerName = existingPlayer.Name
 					}
 			
 					// 既に同じSteamIDが存在するか確認
 					if existingPlayer, exists := playersSub2Map[player.SteamID]; exists {
 						// 同一人物として扱う
-						playerName = exists.Name
+						playerName = existingPlayer.Name
 					}
 					
 					if playersMap[playerName] {
