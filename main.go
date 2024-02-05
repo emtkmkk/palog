@@ -349,6 +349,10 @@ func main() {
 								delete(playerDisappearances, pn)
 								delete(onlinePlayers, pn)
 								onlinePlayers[player.Name] = player
+								err := retriedBoarcast(fmt.Sprintf("[%s]player-renamed?:%s->%s", t.Format(layout), pn, player.Name))
+								if err != nil {
+									slog.Error("failed to broadcast", "error", err)
+								}
 								continue
 							}
 						}
