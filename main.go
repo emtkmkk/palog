@@ -215,7 +215,8 @@ func escapeString(s string) string {
 	return string(runes)
 }
 
-const notificationThreshold = 3
+const notificationThreshold = 6
+
 
 func main() {
 	palRCON := palrcon.NewPalRCON(rconEndpoint, rconPassword)
@@ -340,9 +341,9 @@ func main() {
 					}
 					
 					// 同じようなタイミングで退出しているプレイヤーがいる場合、ニックネームバグの可能性が高い
-					if playerAppearances[playerName] == 2 {
+					if playerAppearances[playerName] == notificationThreshold - 1 {
 						for pn, count := range playerDisappearances {
-							if count == 2 {
+							if count == notificationThreshold - 1 {
 								//通知せずに入れ替え
 								slog.Info("nameChange:" + pn, "newName", player.Name)
 								delete(playerAppearances, playerName)
