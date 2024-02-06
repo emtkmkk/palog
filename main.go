@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
@@ -12,7 +13,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	"bytes"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
 )
@@ -148,7 +148,7 @@ func runFree() MemInfo {
 		slog.Error("failed to run free", "error", err)
 		return MemInfo{
 			TotalMemory: 0,
-			UsedMemory: 0,
+			UsedMemory:  0,
 		}
 	}
 
@@ -158,7 +158,7 @@ func runFree() MemInfo {
 		slog.Error("failed to run free", "len(line)", len(line))
 		return MemInfo{
 			TotalMemory: 0,
-			UsedMemory: 0,
+			UsedMemory:  0,
 		}
 	}
 
@@ -167,30 +167,30 @@ func runFree() MemInfo {
 		slog.Error("failed to run free", "len(fields)", len(fields))
 		return MemInfo{
 			TotalMemory: 0,
-			UsedMemory: 0,
+			UsedMemory:  0,
 		}
 	}
 
-	intTotal, err := strconv.Atoi(fields[1]);
+	intTotal, err := strconv.Atoi(fields[1])
 	if err != nil {
 		slog.Error("failed to run free", "error", err)
 		return MemInfo{
 			TotalMemory: 0,
-			UsedMemory: 0,
+			UsedMemory:  0,
 		}
 	}
-	intUsed, err := strconv.Atoi(fields[2]);
+	intUsed, err := strconv.Atoi(fields[2])
 	if err != nil {
 		slog.Error("failed to run free", "error", err)
 		return MemInfo{
 			TotalMemory: intTotal,
-			UsedMemory: 0,
+			UsedMemory:  0,
 		}
 	}
 
 	return MemInfo{
 		TotalMemory: intTotal,
-		UsedMemory: intUsed,
+		UsedMemory:  intUsed,
 	}
 }
 
@@ -217,7 +217,6 @@ func escapeString(s string) string {
 }
 
 const notificationThreshold = 6
-
 
 func main() {
 	palRCON := palrcon.NewPalRCON(rconEndpoint, rconPassword)
@@ -291,11 +290,11 @@ func main() {
 	}
 
 	namefunc := func(oldName string, newName string) string {
-		oldByte = []byte(oldName)
-		newByte = []byte(newName)
+		oldByte := []byte(oldName)
+		newByte := []byte(newName)
 		slog.Info("namecompare", "oldByte", oldByte)
 		slog.Info("namecompare", "newByte", newByte)
-		if bytes.HasPrefix(oldName, newName) {
+		if bytes.HasPrefix(oldByte, newByte) {
 			slog.Info("namecompare", "result", "old")
 			return oldName
 		}
@@ -346,37 +345,37 @@ func main() {
 					if existingPlayer, exists := replaceNameList[playerName]; exists {
 						playerName = existingPlayer
 					}
-			
+
 					// 既に同じPlayerUIDが存在するか確認
 					if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
 						// 同一人物として扱う
-						name := namefunc(prevSub[player.PlayerUID].Name, playerName)
+						name := namefunc(existingPlayer.Name, playerName)
 						replaceNameList[playerName] = name
-						slog.Info("same PlayerUID:" + player.PlayerUID + " oldName:" + playerName, "newName", name)
+						slog.Info("same PlayerUID:"+player.PlayerUID+" oldName:"+playerName, "newName", name)
 						playerName = name
 					}
-					
+
 					// 既に同じSteamIDが存在するか確認
 					if existingPlayer, exists := prevSub2[player.SteamID]; exists {
 						// 同一人物として扱う
-						name := namefunc(prevSub2[player.SteamID].Name, playerName)
+						name := namefunc(existingPlayer.Name, playerName)
 						replaceNameList[playerName] = name
-						slog.Info("same SteamID:" + player.SteamID + " oldName:" + playerName, "newName", name)
+						slog.Info("same SteamID:"+player.SteamID+" oldName:"+playerName, "newName", name)
 						playerName = name
 					}
-					
+
 					// 同じようなタイミングで退出しているプレイヤーがいる場合、ニックネームバグの可能性が高い
-					if playerAppearances[playerName] == notificationThreshold - 1 {
+					if playerAppearances[playerName] == notificationThreshold-1 {
 						for pn, count := range playerDisappearances {
-							if count == notificationThreshold - 1 {
+							if count == notificationThreshold-1 {
 								name := namefunc(pn, playerName)
 								replaceNameList[playerName] = name
 								delete(playerAppearances, playerName)
 								delete(playerDisappearances, pn)
-								slog.Info("add Alias:" + playerName, "newName", name)
+								slog.Info("add Alias:"+playerName, "newName", name)
 								playerName = name
 								if pn != playerName {
-									slog.Info("nameChange:" + pn, "newName", playerName)
+									slog.Info("nameChange:"+pn, "newName", playerName)
 									delete(onlinePlayers, pn)
 									onlinePlayers[playerName] = player
 									err := retriedBoarcast(fmt.Sprintf("[%s]renamed?:%s->%s", t.Format(layout), pn, player.Name))
@@ -392,11 +391,11 @@ func main() {
 					if _, ok := onlinePlayers[playerName]; ok {
 						continue
 					}
-					
+
 					delete(playerDisappearances, playerName)
-					
+
 					playerAppearances[playerName]++
-					slog.Info("playerAppearances:" + playerName, "count", playerAppearances[playerName])
+					slog.Info("playerAppearances:"+playerName, "count", playerAppearances[playerName])
 					if playerAppearances[playerName] >= notificationThreshold {
 						delete(playerAppearances, playerName)
 						slog.Info("Player joined", "player", player)
@@ -408,42 +407,42 @@ func main() {
 					}
 				}
 			}
-			
+
 			for playerName, player := range onlinePlayers {
 				if _, ok := playersMap[player.Name]; !ok {
 					// 退出したプレイヤー
-			
+
 					if existingPlayer, exists := replaceNameList[playerName]; exists {
 						playerName = existingPlayer
 					}
-					
+
 					// 既に同じPlayerUIDが存在するか確認
 					if existingPlayer, exists := playersSubMap[player.PlayerUID]; exists {
 						// 同一人物として扱う
-						name := namefunc(prevSub[player.PlayerUID].Name, playerName)
+						name := namefunc(existingPlayer.Name, playerName)
 						replaceNameList[playerName] = name
-						slog.Info("same PlayerUID:" + player.PlayerUID + " oldName:" + playerName, "newName", name)
+						slog.Info("same PlayerUID:"+player.PlayerUID+" oldName:"+playerName, "newName", name)
 						playerName = name
 					}
-			
+
 					// 既に同じSteamIDが存在するか確認
 					if existingPlayer, exists := playersSub2Map[player.SteamID]; exists {
 						// 同一人物として扱う
-						name := namefunc(prevSub2[player.SteamID].Name, playerName)
+						name := namefunc(existingPlayer.Name, playerName)
 						replaceNameList[playerName] = name
-						slog.Info("same SteamID:" + player.SteamID + " oldName:" + playerName, "newName", name)
+						slog.Info("same SteamID:"+player.SteamID+" oldName:"+playerName, "newName", name)
 						playerName = name
 					}
-					
+
 					if _, ok := playersMap[playerName]; ok {
 						continue
 					}
-					
+
 					delete(playerAppearances, playerName)
-					
+
 					playerDisappearances[playerName]++
-					slog.Info("playerDisappearances:" + playerName, "count", playerDisappearances[playerName])
-					
+					slog.Info("playerDisappearances:"+playerName, "count", playerDisappearances[playerName])
+
 					if playerDisappearances[playerName] >= notificationThreshold {
 						delete(playerDisappearances, playerName)
 						delete(onlinePlayers, playerName)
@@ -465,10 +464,10 @@ func main() {
 
 			if t.Format(layoutm) == "00" || t.Format(layoutm) == "30" {
 				if !noticeFlg {
-					memInfo := runFree();
-					var playerNames []string 
+					memInfo := runFree()
+					var playerNames []string
 					for onlinePlayer := range onlinePlayers {
-						playerNames =  append(playerNames, onlinePlayer)
+						playerNames = append(playerNames, onlinePlayer)
 					}
 					playerNamesText := "Online:" + strings.Join(playerNames, ",")
 					if t.Format(layouth) == "00" && t.Format(layoutm) == "00" {
