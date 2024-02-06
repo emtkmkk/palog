@@ -98,20 +98,20 @@ func (p *palRCON) GetPlayers() ([]Player, error) {
 		if len(fields) == 1 {
 			players = append(players, Player{
 				Name:      extractPrintableChars(name),
-				PlayerUID: extractPrintableChars(name),
-				SteamID:   extractPrintableChars(name),
+				PlayerUID: "",
+				SteamID:   "",
 			})
 		} else if len(fields) == 2 {
 			players = append(players, Player{
 				Name:      extractPrintableChars(name),
 				PlayerUID: extractPrintableChars([]byte(fields[1])),
-				SteamID:   extractPrintableChars([]byte(fields[1])),
+				SteamID:   "",
 			})
 		} else {
 			players = append(players, Player{
 				Name:      extractPrintableChars(name),
-				PlayerUID: extractPrintableChars([]byte(fields[2])),
-				SteamID:   extractPrintableChars([]byte(fields[1])),
+				PlayerUID: extractPrintableChars([]byte(fields[1])),
+				SteamID:   extractPrintableChars([]byte(fields[2])),
 			})
 		}
 	}
