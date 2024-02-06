@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"bytes"
 
 	"github.com/miscord-dev/palog/pkg/palrcon"
 )
@@ -228,12 +229,13 @@ func main() {
 	var onlinePlayers map[string]palrcon.Player
 	var playerAppearances = make(map[string]int)
 	var playerDisappearances = make(map[string]int)
+	var replaceNameList = make(map[string]string)
 
 	makeMap := func(players []palrcon.Player) map[string]palrcon.Player {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.Name == "" || player.SteamID == "00000000" {
+			if player.Name == "" || player.PlayerUID == "00000000" || player.SteamID == "00000000" {
 				continue
 			}
 
@@ -260,7 +262,7 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.SteamID == "00000000" || strings.Contains(player.SteamID, `\x00`) || len(player.PlayerUID) < 12 {
+			if player.PlayerUID == "00000000" || player.SteamID == "00000000" || len(player.PlayerUID) < 12 {
 				continue
 			}
 
@@ -286,6 +288,19 @@ func main() {
 		}
 
 		return fmt.Errorf("failed to broadcast: %w", err)
+	}
+
+	namefunc := func(oldName string, newName string) string {
+		oldByte = []byte(oldName)
+		newByte = []byte(newName)
+		slog.Info("namecompare", "oldByte", oldByte)
+		slog.Info("namecompare", "newByte", newByte)
+		if bytes.HasPrefix(oldName, newName) {
+			slog.Info("namecompare", "result", "old")
+			return oldName
+		}
+		slog.Info("namecompare", "result", "new")
+		return newName
 	}
 
 	noticeFlg := false
@@ -327,34 +342,49 @@ func main() {
 			for playerName, player := range playersMap {
 				if _, ok := onlinePlayers[playerName]; !ok {
 					// 新しく参加したプレイヤー
+
+					if existingPlayer, exists := replaceNameList[playerName]; exists {
+						playerName = existingPlayer
+					}
 			
 					// 既に同じPlayerUIDが存在するか確認
 					if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
 						// 同一人物として扱う
-						playerName = existingPlayer.Name
+						name := namefunc(prevSub[player.PlayerUID].Name, playerName)
+						replaceNameList[playerName] = name
+						slog.Info("same PlayerUID:" + player.PlayerUID + " oldName:" + playerName, "newName", name)
+						playerName = name
 					}
-			
+					
 					// 既に同じSteamIDが存在するか確認
 					if existingPlayer, exists := prevSub2[player.SteamID]; exists {
 						// 同一人物として扱う
-						playerName = existingPlayer.Name
+						name := namefunc(prevSub2[player.SteamID].Name, playerName)
+						replaceNameList[playerName] = name
+						slog.Info("same SteamID:" + player.SteamID + " oldName:" + playerName, "newName", name)
+						playerName = name
 					}
 					
 					// 同じようなタイミングで退出しているプレイヤーがいる場合、ニックネームバグの可能性が高い
 					if playerAppearances[playerName] == notificationThreshold - 1 {
 						for pn, count := range playerDisappearances {
 							if count == notificationThreshold - 1 {
-								//通知せずに入れ替え
-								slog.Info("nameChange:" + pn, "newName", player.Name)
+								name := namefunc(pn, playerName)
+								replaceNameList[playerName] = name
 								delete(playerAppearances, playerName)
 								delete(playerDisappearances, pn)
-								delete(onlinePlayers, pn)
-								onlinePlayers[player.Name] = player
-								err := retriedBoarcast(fmt.Sprintf("[%s]player-renamed?:%s->%s", t.Format(layout), pn, player.Name))
-								if err != nil {
-									slog.Error("failed to broadcast", "error", err)
+								slog.Info("add Alias:" + playerName, "newName", name)
+								playerName = name
+								if pn != playerName {
+									slog.Info("nameChange:" + pn, "newName", playerName)
+									delete(onlinePlayers, pn)
+									onlinePlayers[playerName] = player
+									err := retriedBoarcast(fmt.Sprintf("[%s]renamed?:%s->%s", t.Format(layout), pn, player.Name))
+									if err != nil {
+										slog.Error("failed to broadcast", "error", err)
+									}
 								}
-								continue
+								break
 							}
 						}
 					}
@@ -371,7 +401,7 @@ func main() {
 						delete(playerAppearances, playerName)
 						slog.Info("Player joined", "player", player)
 						onlinePlayers[player.Name] = player
-						err := retriedBoarcast(fmt.Sprintf("[%s]player-joined:%s(%d/32)", t.Format(layout), player.Name, len(onlinePlayers)))
+						err := retriedBoarcast(fmt.Sprintf("[%s]joined:%s(%d/32)", t.Format(layout), player.Name, len(onlinePlayers)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 						}
@@ -383,16 +413,26 @@ func main() {
 				if _, ok := playersMap[player.Name]; !ok {
 					// 退出したプレイヤー
 			
+					if existingPlayer, exists := replaceNameList[playerName]; exists {
+						playerName = existingPlayer
+					}
+					
 					// 既に同じPlayerUIDが存在するか確認
 					if existingPlayer, exists := playersSubMap[player.PlayerUID]; exists {
 						// 同一人物として扱う
-						playerName = existingPlayer.Name
+						name := namefunc(prevSub[player.PlayerUID].Name, playerName)
+						replaceNameList[playerName] = name
+						slog.Info("same PlayerUID:" + player.PlayerUID + " oldName:" + playerName, "newName", name)
+						playerName = name
 					}
 			
 					// 既に同じSteamIDが存在するか確認
 					if existingPlayer, exists := playersSub2Map[player.SteamID]; exists {
 						// 同一人物として扱う
-						playerName = existingPlayer.Name
+						name := namefunc(prevSub2[player.SteamID].Name, playerName)
+						replaceNameList[playerName] = name
+						slog.Info("same SteamID:" + player.SteamID + " oldName:" + playerName, "newName", name)
+						playerName = name
 					}
 					
 					if _, ok := playersMap[playerName]; ok {
@@ -408,7 +448,7 @@ func main() {
 						delete(playerDisappearances, playerName)
 						delete(onlinePlayers, playerName)
 						slog.Info("Player left", "player", player)
-						err := retriedBoarcast(fmt.Sprintf("[%s]player-left:%s(%d/32)", t.Format(layout), playerName, len(onlinePlayers)))
+						err := retriedBoarcast(fmt.Sprintf("[%s]left:%s(%d/32)", t.Format(layout), playerName, len(onlinePlayers)))
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 						}
