@@ -38,6 +38,8 @@ var (
 func init() {
 	var err error
 
+	slog.Info("run", "start", "start")
+
 	if timeoutRaw == "" {
 		timeoutRaw = "1s"
 	}
@@ -346,22 +348,24 @@ func main() {
 						playerName = existingPlayer
 					}
 
-					// 既に同じPlayerUIDが存在するか確認
-					if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
-						// 同一人物として扱う
-						name := namefunc(existingPlayer.Name, playerName)
-						replaceNameList[playerName] = name
-						slog.Info("same PlayerUID:"+player.PlayerUID+" oldName:"+playerName, "newName", name)
-						playerName = name
-					}
+					if playerAppearances[playerName] == 0 {
+						// 既に同じPlayerUIDが存在するか確認
+						if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
+							// 同一人物として扱う
+							name := namefunc(existingPlayer.Name, playerName)
+							replaceNameList[playerName] = name
+							slog.Info("same PlayerUID:"+player.PlayerUID+" oldName:"+playerName, "newName", name)
+							playerName = name
+						}
 
-					// 既に同じSteamIDが存在するか確認
-					if existingPlayer, exists := prevSub2[player.SteamID]; exists {
-						// 同一人物として扱う
-						name := namefunc(existingPlayer.Name, playerName)
-						replaceNameList[playerName] = name
-						slog.Info("same SteamID:"+player.SteamID+" oldName:"+playerName, "newName", name)
-						playerName = name
+						// 既に同じSteamIDが存在するか確認
+						if existingPlayer, exists := prevSub2[player.SteamID]; exists {
+							// 同一人物として扱う
+							name := namefunc(existingPlayer.Name, playerName)
+							replaceNameList[playerName] = name
+							slog.Info("same SteamID:"+player.SteamID+" oldName:"+playerName, "newName", name)
+							playerName = name
+						}
 					}
 
 					// 同じようなタイミングで退出しているプレイヤーがいる場合、ニックネームバグの可能性が高い
@@ -389,6 +393,7 @@ func main() {
 					}
 
 					if _, ok := onlinePlayers[playerName]; ok {
+						delete(playerAppearances, playerName)
 						continue
 					}
 
@@ -405,6 +410,11 @@ func main() {
 							slog.Error("failed to broadcast", "error", err)
 						}
 					}
+				} else {
+					if playerAppearances[playerName] > 0 {
+						delete(playerAppearances, playerName)
+						slog.Info("playerAppearances:"+playerName, "count", playerAppearances[playerName])
+					}
 				}
 			}
 
@@ -416,25 +426,28 @@ func main() {
 						playerName = existingPlayer
 					}
 
-					// 既に同じPlayerUIDが存在するか確認
-					if existingPlayer, exists := playersSubMap[player.PlayerUID]; exists {
-						// 同一人物として扱う
-						name := namefunc(existingPlayer.Name, playerName)
-						replaceNameList[playerName] = name
-						slog.Info("same PlayerUID:"+player.PlayerUID+" oldName:"+playerName, "newName", name)
-						playerName = name
-					}
+					if playerDisappearances[playerName] == 0 {
+						// 既に同じPlayerUIDが存在するか確認
+						if existingPlayer, exists := playersSubMap[player.PlayerUID]; exists {
+							// 同一人物として扱う
+							name := namefunc(existingPlayer.Name, playerName)
+							replaceNameList[playerName] = name
+							slog.Info("same PlayerUID:"+player.PlayerUID+" oldName:"+playerName, "newName", name)
+							playerName = name
+						}
 
-					// 既に同じSteamIDが存在するか確認
-					if existingPlayer, exists := playersSub2Map[player.SteamID]; exists {
-						// 同一人物として扱う
-						name := namefunc(existingPlayer.Name, playerName)
-						replaceNameList[playerName] = name
-						slog.Info("same SteamID:"+player.SteamID+" oldName:"+playerName, "newName", name)
-						playerName = name
+						// 既に同じSteamIDが存在するか確認
+						if existingPlayer, exists := playersSub2Map[player.SteamID]; exists {
+							// 同一人物として扱う
+							name := namefunc(existingPlayer.Name, playerName)
+							replaceNameList[playerName] = name
+							slog.Info("same SteamID:"+player.SteamID+" oldName:"+playerName, "newName", name)
+							playerName = name
+						}
 					}
 
 					if _, ok := playersMap[playerName]; ok {
+						delete(playerDisappearances, playerName)
 						continue
 					}
 
@@ -451,6 +464,11 @@ func main() {
 						if err != nil {
 							slog.Error("failed to broadcast", "error", err)
 						}
+					}
+				} else {
+					if playerDisappearances[playerName] > 0 {
+						delete(playerDisappearances, playerName)
+						slog.Info("playerDisappearances:"+playerName, "count", playerDisappearances[playerName])
 					}
 				}
 			}
