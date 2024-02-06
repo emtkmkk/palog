@@ -263,7 +263,7 @@ func main() {
 		m := make(map[string]palrcon.Player)
 
 		for _, player := range players {
-			if player.PlayerUID == "00000000" || player.SteamID == "00000000" || len(player.PlayerUID) < 12 {
+			if player.PlayerUID == "00000000" || player.SteamID == "00000000" || len(player.SteamID) < 12 {
 				continue
 			}
 
@@ -349,6 +349,7 @@ func main() {
 					}
 
 					if playerAppearances[playerName] == 0 {
+						slog.Info("new Player", "player", player)
 						// 既に同じPlayerUIDが存在するか確認
 						if existingPlayer, exists := prevSub[player.PlayerUID]; exists {
 							// 同一人物として扱う
